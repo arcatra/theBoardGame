@@ -104,22 +104,22 @@ public class TicToc {
 
         this.displayBoard();
 
-        System.out.println(RED + "Red = " + this.players[0].playerName + RESET);
-        System.out.println(GREEN + "Green = " + this.players[1].playerName + RESET);
+        System.out.println(RED + "Red = " + this.players[0].name + RESET);
+        System.out.println(GREEN + "Green = " + this.players[1].name + RESET);
     }
 
     public void onboardPlayer(Scanner input) {
-        System.out.println("\nPlayers details: Register\n");
+        System.out.println("\nRegister player details:\n");
         int id = 0;
         String userName;
         while (id < 2) {
             System.out.printf("Name of Player-%d: ", id + 1);
             try {
-                userName = input.nextLine();
+                userName = input.nextLine().toUpperCase();
                 if (!userName.equals("")) {
 
-                    if (id > 0 && players[id - 1].playerName.equals(userName)) {
-                        System.out.println("This player name is same as the last one, use a different one\n");
+                    if (id > 0 && players[id - 1].name.equals(userName)) {
+                        System.out.println("This player name is same as the last one, use a different NAME\n");
                         continue;
                     }
 
@@ -153,11 +153,11 @@ public class TicToc {
 
         while (!(stop)) {
             System.out.printf("\nTotal boxes filled so far: %d\n", filledBoxes);
-            System.out.printf("Current player: %s\n", currentPlayerObj.playerName);
+            System.out.printf("Current player: %s\n", currentPlayerObj.name);
 
             String symbol = this.getUserSelectedSymbol(input);
 
-            if (symbol.equals("X") || symbol.equals("O")) {
+            if (symbol.length() == 1 && "XO".contains(symbol)) {
                 int boxId = this.getUserSelectedBoxId(input);
 
                 if (boxId <= (this.rows * this.columns) && boxId > 0) {
@@ -175,7 +175,7 @@ public class TicToc {
                         this.updatePlayerPoints(points, currentPlayerObj);
 
                         currentPlayerObj = (currentPlayerObj == this.players[0]) ? this.players[1] : this.players[0];
-                        System.out.println("\nplayers score\n");
+
                         this.displayPlayersScore();
 
                         filledBoxes++;
@@ -192,8 +192,13 @@ public class TicToc {
                 }
 
             } else {
-                if (symbol != "XOX")
+                if (!symbol.equals("XOX")) {
                     System.out.println("\nOnly symbols 'x' or 'o' are allowed, try again\n");
+
+                } else {
+                    System.out.println("\nExit confirmed\n");
+
+                }
             }
 
             if (this.checkForBreakCondition(filledBoxes, symbol)) {
@@ -226,11 +231,10 @@ public class TicToc {
 
         } catch (NumberFormatException e) {
             System.out.println("\nNope... Box id is always a number, try again\n");
-            input.nextLine();
 
         } catch (Exception e) {
             System.out.println("Error occured: " + e);
-            input.nextLine();
+
         }
 
         return boxId;
@@ -244,7 +248,7 @@ public class TicToc {
 
     private void updateBox(BoardBox box, String symbol, int boxId, Player currentPlayer) {
 
-        System.out.printf("\n%s choosed box-%d to place %s\n\n", currentPlayer.playerName,
+        System.out.printf("\n%s choosed box-%d to place %s\n\n", currentPlayer.name,
                 boxId, symbol);
 
         box.symbol = symbol;
@@ -260,8 +264,14 @@ public class TicToc {
     }
 
     private void displayPlayersScore() {
+        System.out.println("\nplayers score:\n");
         for (Player player : this.players) {
-            System.out.printf("Player: %s, score: %d\n", player.playerName, player.score);
+            String color = player.defaultColor;
+
+            System.out.printf(
+                    "Player: %s%s%s, score: %s%d%s\n",
+                    color, player.name, RESET,
+                    color, player.score, RESET);
         }
     }
 
@@ -360,6 +370,44 @@ public class TicToc {
         return validStringsCount;
     }
 
+    public void declareTheWinner() {
+
+        Player wonPlayer = this.getWonPlayer();
+
+        if (wonPlayer == null) {
+            System.out.println(GREEN + "\nThis game is a TIE, Play a new game again\n" + RESET);
+
+            return;
+        }
+
+        Player lostPlayer = this.getLostPlayer(wonPlayer);
+
+        System.out.printf(
+                wonPlayer.defaultColor + "\n\n%s WON the game against %s by %d points\n\n" + RESET,
+                wonPlayer.name,
+                lostPlayer.name,
+                (wonPlayer.score - lostPlayer.score));
+
+    }
+
+    // Helper methods of DecalreTheWinner method ------------------
+    private Player getWonPlayer() {
+
+        if (players[0].score == players[1].score) {
+            return null;
+        }
+
+        return (players[0].score > players[1].score) ? players[0] : players[1];
+    }
+
+    private Player getLostPlayer(Player wonPlayer) {
+
+        return (wonPlayer == players[0] ? players[1] : players[0]);
+
+    }
+
+    // helper methods end ----------------------------------------
+
     public static void main(String[] args) {
         int argRows = 4;
         int argColumns = 4;
@@ -369,6 +417,7 @@ public class TicToc {
             argColumns = Integer.parseInt(args[1]);
 
         } else {
+            System.out.println(TicToc.RESET);
             System.out.println("\nDefaulting the board size to 4 x 4.\n");
         }
 
@@ -381,7 +430,10 @@ public class TicToc {
         xox.onboardPlayer(userIn);
         xox.startGameLoop(userIn);
 
+        xox.declareTheWinner();
+
         userIn.close();
+
     }
 }
 
