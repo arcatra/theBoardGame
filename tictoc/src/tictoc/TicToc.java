@@ -35,14 +35,14 @@ public class TicToc {
         System.out.println("- This is a two player game,");
         System.out.println("- This game consists of two symbols 'x' and 'o'.");
         System.out.println("- On every turn each player will choose any one of the sym -");
-        System.out.println("- to place it inside any of the boxes on the board.");
+        System.out.println("- to place it inside any one of the boxes on the board.");
         System.out.println("- Example: x, in next line: 12");
         System.out.println("Where:");
-        System.out.println("\t- 'x' means the symbol that player have choosen.");
-        System.out.println("\t- '12' means the box id that this symbol(x) will be placed in.\n");
-        System.out.println("- Only rows, columns, no diagonals will be considerd for points.\n");
-        System.out.println("Note: The box id's starts with 1");
-        System.out.println("\n- Finally player with more points/ score wins the game!");
+        System.out.println("\t- 'x' : The choosen symbol.");
+        System.out.println("\t- '12' : The choosen boxID.\n");
+        System.out.println("- Only rows, columns will be considerd for points, no diagonals.\n");
+        System.out.printf("Note: The box's id starts from 1, and ends at %d\n", (this.rows * this.columns));
+        System.out.println("\n- Finally player with more points or score will win the game!");
         System.out.println("\nRules end ----------------------------------------------------------\n");
     }
 
@@ -107,8 +107,9 @@ public class TicToc {
 
         this.displayBoard();
 
-        System.out.println(RED + "Red = " + this.players[0].getName() + RESET);
-        System.out.println(GREEN + "Green = " + this.players[1].getName() + RESET);
+        System.out.printf("%sRed%s = %s\n", RED, RESET, this.players[0].getName());
+        System.out.printf("%sGreen%s = %s\n\n", GREEN, RESET, this.players[1].getName());
+
     }
 
     public void onboardPlayer(Scanner input) {
@@ -121,7 +122,7 @@ public class TicToc {
                 userName = input.nextLine().toUpperCase();
                 if (!userName.equals("")) {
 
-                    if (id > 0 && players[id - 1].getName().equals(userName)) {
+                    if (id > 0 && players[0].getName().equals(userName)) {
                         System.out.println("This player name is same as the last one, use a different NAME\n");
                         continue;
                     }
@@ -139,6 +140,9 @@ public class TicToc {
             } catch (InputMismatchException e) {
                 System.out.println("\nPlayer name can only be a String, try again\n");
 
+            } catch (Exception e) {
+                System.out.println("Currently handling players registration");
+                System.out.println("Opps.. error occured: " + e.getLocalizedMessage());
             }
         }
 
@@ -175,14 +179,18 @@ public class TicToc {
 
             if (box.isBoxEmpty()) {
                 this.updateBox(box, symbol, boxId, currPlayerObj);
+
                 this.displayBoard();
 
                 int points = this.getCurrPlayerPoints(rowIndex, columnIndex, box.getSymbol());
-                this.updatePlayerPoints(points, currPlayerObj);
+                if (points > 0) {
+                    System.out.printf("\n+%d for %s\n", points, currPlayerObj.getName());
+
+                    currPlayerObj.updateScore(points);
+                    this.displayPlayersScore();
+                }
 
                 currPlayerObj = (currPlayerObj == this.players[0]) ? this.players[1] : this.players[0];
-
-                this.displayPlayersScore();
 
                 filledBoxes++;
 
@@ -202,7 +210,7 @@ public class TicToc {
 
     private String readSymbol(Scanner input) {
         while (true) {
-            System.out.print("\nEnter choosen Symbol: ");
+            System.out.print("\nEnter the choosen symbol: ");
             String symbol = input.nextLine().toUpperCase();
 
             if ("XO".contains(symbol) || "XOX".equals(symbol)) {
@@ -248,13 +256,6 @@ public class TicToc {
 
     }
 
-    private void updatePlayerPoints(int points, Player player) {
-        if (points > 0) {
-            player.setScore(points);
-        }
-
-    }
-
     private void displayPlayersScore() {
         System.out.println("\nplayers score:\n");
         for (Player player : this.players) {
@@ -282,11 +283,9 @@ public class TicToc {
 
         } else if (boxSymbol.equals("O")) {
 
-            int tempColumn = Math.max(0, column - 1);
-            points += this.getValidPoints(row, tempColumn, 2, false, "XOX");
+            points += this.getValidPoints(row, column, 1, false, "XOX");
 
-            int tempRow = Math.max(0, row - 1);
-            points += this.getValidPoints(column, tempRow, 2, true, "XOX");
+            points += this.getValidPoints(column, row, 1, true, "XOX");
 
         }
 
@@ -294,63 +293,12 @@ public class TicToc {
     }
 
     private int getValidPoints(int row, int column, int beyond, boolean swap, String match) {
-        int validStringsCount = 0;
+        int validPoints = 0;
 
         int start = Math.max(0, column - beyond);
         int end = Math.min(column + beyond, (this.columns - 1));
 
-        StringBuilder oneCycleStringIndexes = new StringBuilder();
-        StringBuilder oneCycleString = new StringBuilder();
-
-        for (int index = start; index <= end; index++) {
-
-            if (index == column) {
-                if (swap) {
-                    oneCycleStringIndexes.append(index).append(row);
-                    oneCycleString.append(this.board.get(index)[row].getSymbol());
-
-                } else {
-                    oneCycleStringIndexes.append(row).append(index);
-                    oneCycleString.append(this.board.get(row)[index].getSymbol());
-
-                }
-
-                if (oneCycleString.toString().equals(match)) {
-                    if (!this.alreadyMatched.contains(oneCycleStringIndexes.toString())) {
-                        validStringsCount++;
-                        this.alreadyMatched.add(oneCycleStringIndexes.toString());
-
-                    }
-                }
-
-                oneCycleStringIndexes.setLength(0); // Reset
-                oneCycleString.setLength(0); // Reset
-
-            }
-
-            if (swap) {
-                oneCycleStringIndexes.append(index).append(row);
-                oneCycleString.append(this.board.get(index)[row].getSymbol());
-
-            } else {
-                oneCycleStringIndexes.append(row).append(index);
-                oneCycleString.append(this.board.get(row)[index].getSymbol());
-
-            }
-
-            String finalString = oneCycleString.toString();
-            String finalIndex = oneCycleStringIndexes.toString();
-
-            if (finalString.equals(match)) {
-                if (!this.alreadyMatched.contains(finalIndex)) {
-                    validStringsCount++;
-                    this.alreadyMatched.add(finalIndex);
-
-                }
-            }
-        }
-
-        return validStringsCount;
+        return validPoints;
     }
 
     public void declareTheWinner() {
@@ -366,7 +314,7 @@ public class TicToc {
         var lostPlayer = this.getLostPlayer(wonPlayer);
 
         System.out.printf(
-                wonPlayer.getColor() + "\n\n%s WON the game against %s by %d points\n\n" + RESET,
+                wonPlayer.getColor() + "\n%s WON the game against %s by %d points\n\n" + RESET,
                 wonPlayer.getName(),
                 lostPlayer.getName(),
                 (wonPlayer.getScore() - lostPlayer.getScore()));

@@ -26,8 +26,8 @@ public class Player {
 
     }
 
-    public void setScore(int newScore) {
-        this.score = newScore;
+    public void updateScore(int newScore) {
+        this.score += newScore;
 
     }
 }
