@@ -1,4 +1,4 @@
-package tictoc;
+package tictoc.utils;
 
 public class Player {
     private int score;

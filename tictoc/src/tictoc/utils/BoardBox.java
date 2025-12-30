@@ -1,4 +1,4 @@
-package tictoc;
+package tictoc.utils;
 
 public class BoardBox {
     private String symbol;

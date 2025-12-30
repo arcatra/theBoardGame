@@ -1,45 +1,53 @@
 package tictoc;
 
 // Import -----------
-import java.util.ArrayList;
+// import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.InputMismatchException;
 import java.util.Map;
 import java.util.Scanner;
-// import java.lang.StringBuilder;
+
+import tictoc.utils.Board;
+import tictoc.utils.BoardBox;
+import tictoc.utils.Player;
 // ------------------
 
 public class TicToc {
-    int rows;
-    int columns;
+    private int rows;
+    private int columns;
 
-    private ArrayList<BoardBox[]> board = new ArrayList<>();
-    private Map<Integer, int[]> boxMap = new HashMap<>();
+    private Board board;
+    public Map<Integer, int[]> boxMap = new HashMap<>();
 
-    public Player[] players = new Player[2];
+    private Player[] players = new Player[2];
 
-    private ArrayList<String> alreadyMatched = new ArrayList<>();
+    // private ArrayList<String> alreadyMatched = new ArrayList<>();
     // store already matched string indices, in list form
 
-    final static String RESET = "\u001B[0m";
+    final static public String RESET = "\u001B[0m";
     final static String RED = "\u001B[31m";
     final static String GREEN = "\u001B[32m";
+    final static String YELLOW = "";
 
     public TicToc(int rows, int columns) {
         this.rows = rows;
         this.columns = columns;
+
+        this.board = new Board(rows, columns, this);
+
     }
 
     public void GameRules() {
         System.out.println("\nRules -------------------------------------------------------------\n");
         System.out.println("- This is a two player game,");
-        System.out.println("- This game consists of two symbols 'x' and 'o'.");
+        System.out.println("- This game consists of two symbols: 'x' & 'o'.");
         System.out.println("- On every turn each player will choose any one of the sym -");
         System.out.println("- to place it inside any one of the boxes on the board.");
-        System.out.println("- Example: x, in next line: 12");
+        System.out.println("- Example: x <Enter>, in next line: 12 <Enter>");
         System.out.println("Where:");
         System.out.println("\t- 'x' : The choosen symbol.");
         System.out.println("\t- '12' : The choosen boxID.\n");
+        System.out.println("- For every xox match, appropriate player will get a point");
         System.out.println("- Only rows, columns will be considerd for points, no diagonals.\n");
         System.out.printf("Note: The box's id starts from 1, and ends at %d\n", (this.rows * this.columns));
         System.out.println("\n- Finally player with more points or score will win the game!");
@@ -47,7 +55,7 @@ public class TicToc {
     }
 
     public void knowRules(Scanner input) {
-        System.out.print("\nDo you know the rules of this game?(y/n) : ");
+        System.out.print("\nDo you know the rules of this game?(n-for rules) : ");
         try {
             String choice = input.nextLine().toLowerCase();
             if (choice.equals("n")) {
@@ -62,50 +70,9 @@ public class TicToc {
         }
     }
 
-    public void buildBoard() {
-        System.out.println("Trying to build the board");
-        int boxId = 1;
-        for (int row = 0; row < this.rows; row++) {
-            BoardBox[] boxes = new BoardBox[this.columns];
-
-            for (int column = 0; column < this.columns; column++) {
-                boxes[column] = new BoardBox(Integer.toString(boxId), RESET);
-                this.boxMap.put(boxId, new int[] { row, column });
-
-                boxId++;
-            }
-
-            this.board.add(boxes);
-        }
-
-        System.out.printf(
-                "Success, constructed board with %d rows and %d columns\n\n", this.rows, this.columns);
-    }
-
-    public void displayBoard() {
-        String boxString = "|  0  |";
-        int repeatCount = boxString.length() - 2;
-
-        for (BoardBox[] rowValues : this.board) {
-            System.out.println(("+" + "-".repeat(repeatCount)).repeat(this.columns) + "+");
-            for (BoardBox box : rowValues) {
-                String boxSymbol = box.getSymbol();
-                String symbolColor = box.getSymbolColor();
-
-                boxString = (boxSymbol.length() < 2 ? "|  " : "| ") + symbolColor + boxSymbol + RESET
-                        + "  ";
-
-                System.out.print(boxString);
-            }
-            System.out.println("|");
-        }
-        System.out.println(("+" + "-".repeat(repeatCount)).repeat(this.columns) + "+");
-
-    }
-
     private void displayBoardWithInfo() {
 
-        this.displayBoard();
+        this.board.displayBoard();
 
         System.out.printf("%sRed%s = %s\n", RED, RESET, this.players[0].getName());
         System.out.printf("%sGreen%s = %s\n\n", GREEN, RESET, this.players[1].getName());
@@ -175,12 +142,12 @@ public class TicToc {
             int rowIndex = indices[0];
             int columnIndex = indices[1];
 
-            BoardBox box = this.board.get(rowIndex)[columnIndex];
+            BoardBox box = this.board.getBoardBox(rowIndex, columnIndex);
 
             if (box.isBoxEmpty()) {
                 this.updateBox(box, symbol, boxId, currPlayerObj);
 
-                this.displayBoard();
+                this.board.displayBoard();
 
                 int points = this.getCurrPlayerPoints(rowIndex, columnIndex, box.getSymbol());
                 if (points > 0) {
@@ -297,6 +264,35 @@ public class TicToc {
 
         int start = Math.max(0, column - beyond);
         int end = Math.min(column + beyond, (this.columns - 1));
+        System.out.printf("Start: %d, end: %d\n", start, end);
+
+        // int validStringLen = 0;
+        StringBuilder validString = new StringBuilder("");
+
+        for (int index = start; index <= end; index++) {
+            BoardBox box = swap ? this.board.getBoardBox(index, row) : this.board.getBoardBox(row, index);
+
+            if ("XO".contains(box.getSymbol())) {
+
+                validString.append(box.getSymbol());
+            }
+
+            System.out.println("Valid string: " + validString.toString());
+            // validStringLen++;
+
+            if (validString.length() == match.length()) {
+                if (validString.toString().equals(match)) {
+                    System.out.println("found matching xox");
+                    validPoints++;
+
+                    validString.setLength(1);
+                    // validStringLen = 1;
+
+                }
+
+            }
+
+        }
 
         return validPoints;
     }
@@ -355,8 +351,9 @@ public class TicToc {
         Scanner userIn = new Scanner(System.in);
         TicToc xox = new TicToc(argRows, argColumns);
 
-        xox.buildBoard();
-        xox.displayBoard();
+        xox.board.buildBoard();
+        xox.board.displayBoard();
+
         xox.knowRules(userIn);
         xox.onboardPlayer(userIn);
         xox.startGameLoop(userIn);
