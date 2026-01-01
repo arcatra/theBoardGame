@@ -7,6 +7,8 @@ import java.util.InputMismatchException;
 import java.util.Map;
 import java.util.Scanner;
 
+import tictoc.helpers.GameLoopHelper;
+import tictoc.helpers.PlayerScoreHelper;
 import tictoc.utils.Board;
 import tictoc.utils.BoardBox;
 import tictoc.utils.Player;
@@ -70,15 +72,6 @@ public class TicToc {
         }
     }
 
-    private void displayBoardWithInfo() {
-
-        this.board.displayBoard();
-
-        System.out.printf("%sRed%s = %s\n", RED, RESET, this.players[0].getName());
-        System.out.printf("%sGreen%s = %s\n\n", GREEN, RESET, this.players[1].getName());
-
-    }
-
     public void onboardPlayer(Scanner input) {
 
         System.out.println("\nRegister players:\n");
@@ -87,7 +80,7 @@ public class TicToc {
 
         while (id < 2) {
             System.out.printf("Name of Player-%d: ", id + 1);
-            playerName = this.getPlayerName(input);
+            playerName = this.readPlayerName(input);
             if (!playerName.equals("")) {
 
                 if (id > 0 && players[0].getName().equals(playerName)) {
@@ -108,10 +101,20 @@ public class TicToc {
         }
 
         System.out.println("\nDisplaying the Board one more time for you\n");
-        this.displayBoardWithInfo();
+
+        this.board.displayBoard();
+        this.displayInitialPlayersInfo();
+
     }
 
-    private String getPlayerName(Scanner input) {
+    private final void displayInitialPlayersInfo() {
+
+        System.out.printf("%sRed%s = %s\n", RED, RESET, this.players[0].getName());
+        System.out.printf("%sGreen%s = %s\n\n", GREEN, RESET, this.players[1].getName());
+
+    }
+
+    private String readPlayerName(Scanner input) {
         String playerName = "";
 
         try {
@@ -132,22 +135,24 @@ public class TicToc {
     public void startGameLoop(Scanner input) {
         System.out.println(RED + "\nEnter xox as symbol to EXIT game" + RESET);
 
-        int filledBoxes = 0;
+        GameLoopHelper gameLoopHelper = new GameLoopHelper();
+
+        int boxesFilled = 0;
         boolean gameOver = false;
         Player currPlayerObj = this.players[0];
 
         while (!(gameOver)) {
-            System.out.printf("\nTotal boxes filled so far: %d\n", filledBoxes);
+            System.out.printf("\nTotal boxes filled so far: %d\n", boxesFilled);
             System.out.printf("Current player: %s\n", currPlayerObj.getName());
 
-            String symbol = this.readSymbol(input);
+            String symbol = gameLoopHelper.readSymbol(input);
 
             if (symbol.equals("XOX")) {
                 System.out.println("\nEXIT confirmed\n");
                 break;
             }
 
-            int boxId = this.readBoxId(input);
+            int boxId = gameLoopHelper.readBoxId(input, this.rows, this.columns);
 
             int[] indices = this.boxMap.get(boxId);
             int rowIndex = indices[0];
@@ -156,164 +161,33 @@ public class TicToc {
             BoardBox box = this.board.getBoardBox(rowIndex, columnIndex);
 
             if (box.isBoxEmpty()) {
-                this.updateBox(box, symbol, boxId, currPlayerObj);
+                PlayerScoreHelper scoreHelper = new PlayerScoreHelper(this.columns, this.board);
 
+                gameLoopHelper.updateBoxSymbol(box, symbol, boxId, currPlayerObj);
                 this.board.displayBoard();
 
-                int points = this.getCurrPlayerPoints(rowIndex, columnIndex, box.getSymbol());
-                if (points > 0) {
-                    System.out.printf("\n+%d for %s\n", points, currPlayerObj.getName());
+                int totalScore = scoreHelper.getCurrPlayerPoints(rowIndex, columnIndex, box.getSymbol());
+                if (totalScore > 0) {
+                    System.out.printf("\n+%d for %s\n", totalScore, currPlayerObj.getName());
 
-                    currPlayerObj.updateScore(points);
-                    this.displayPlayersScore();
+                    gameLoopHelper.updatePlayerScore(currPlayerObj, totalScore);
+                    gameLoopHelper.displayPlayersScore(this.players);
+
                 }
 
                 currPlayerObj = (currPlayerObj == this.players[0]) ? this.players[1] : this.players[0];
-
-                filledBoxes++;
+                boxesFilled++;
 
             } else {
                 System.out.println("\nBox already filled, select a different box id\n");
 
             }
 
-            if (filledBoxes == (this.rows * this.columns)) {
+            if (boxesFilled == (this.rows * this.columns)) {
                 gameOver = true;
             }
         }
 
-    }
-
-    // helper methods of GameLoop -----------------------------------
-
-    private String readSymbol(Scanner input) {
-        while (true) {
-            System.out.print("\nEnter the choosen symbol: ");
-            String symbol = input.nextLine().toUpperCase();
-
-            if ("XO".contains(symbol) || "XOX".equals(symbol)) {
-                return symbol;
-
-            } else {
-                System.out.println("\nOnly symbols 'x', 'o' or 'xox'(exit) are allowed, try again\n");
-
-            }
-        }
-    }
-
-    private int readBoxId(Scanner input) {
-        int id;
-        while (true) {
-            System.out.print("Enter the choosen box ID: ");
-            try {
-                id = Integer.parseInt(input.nextLine());
-
-                if (id <= (this.rows * this.columns) && id > 0)
-                    return id;
-
-                System.out.printf("\nInvalid box id, should be <=%d and >=1, Please try again\n\n",
-                        (this.rows * this.columns));
-
-            } catch (NumberFormatException e) {
-                System.out.println("\nNope... Box id is always a number, try again\n");
-
-            } catch (Exception e) {
-                System.out.println("Error occured: " + e);
-
-            }
-        }
-
-    }
-
-    private void updateBox(BoardBox box, String symbol, int boxId, Player currentPlayer) {
-
-        System.out.printf("\n%s choosed box-%d to place %s\n\n", currentPlayer.getName(),
-                boxId, symbol);
-
-        box.setBoxSymbol(symbol, currentPlayer.getColor());
-
-    }
-
-    private void displayPlayersScore() {
-        System.out.println("\nplayers score:\n");
-        for (Player player : this.players) {
-            String color = player.getColor();
-
-            System.out.printf(
-                    "Player: %s%s%s, score: %s%d%s\n",
-                    color, player.getName(), RESET,
-                    color, player.getScore(), RESET);
-        }
-
-    }
-
-    // helper methods end ---------------------------------------------------------
-
-    private int getCurrPlayerPoints(int row, int column, String boxSymbol) {
-        int points = 0;
-        int beyond;
-
-        if (boxSymbol.equals("X")) {
-            // for horizontal
-            beyond = 2;
-            points += this.getValidPoints(row, column, beyond, false, "XOX");
-
-            // for vertical
-            points += this.getValidPoints(column, row, beyond, true, "XOX");
-
-        } else if (boxSymbol.equals("O")) {
-            // Horizontal
-            beyond = 1;
-            points += this.getValidPoints(row, column, beyond, false, "XOX");
-
-            // Vertical
-            points += this.getValidPoints(column, row, beyond, true, "XOX");
-
-        }
-
-        return points;
-    }
-
-    private int[] getValidRange(int columnValue, int beyond) {
-        int start = Math.max(0, columnValue - beyond);
-        int end = Math.min(columnValue + beyond, (this.columns - 1));
-
-        return new int[] { start, end };
-    }
-
-    private int getValidPoints(int row, int column, int beyond, boolean swap, String match) {
-        int validPoints = 0;
-
-        int[] range = this.getValidRange(column, beyond);
-        StringBuilder validString = new StringBuilder("");
-
-        // System.out.printf("Start: %d, end: %d\n", range[0], range[1]);
-
-        for (int index = range[0]; index <= range[1]; index++) {
-            BoardBox box = swap ? this.board.getBoardBox(index, row) : this.board.getBoardBox(row, index);
-
-            if ("XO".contains(box.getSymbol())) {
-                validString.append(box.getSymbol());
-
-            } else {
-                validString.setLength(0);
-
-            }
-
-            if (validString.length() == match.length()) {
-                if (validString.toString().equals(match)) {
-                    validPoints++;
-                    validString.setLength(1);
-
-                } else {
-                    validString.deleteCharAt(0);
-
-                }
-            }
-
-        }
-
-        return validPoints;
     }
 
     public void declareTheWinner() {
@@ -358,7 +232,7 @@ public class TicToc {
         int argRows = 4;
         int argColumns = 4;
 
-        if (args.length == 2 && (args[0] == args[1])) {
+        if (args.length == 2 && (args[0].equals(args[1]))) {
             argRows = Integer.parseInt(args[0]);
             argColumns = Integer.parseInt(args[1]);
 
