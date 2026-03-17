@@ -36,7 +36,7 @@ public class GameEntry {
 
     private final void GameRules() {
         System.out.println("\n");
-        try (BufferedReader br = new BufferedReader(new FileReader("./src/tictoc/rules.txt"))) {
+        try (BufferedReader br = new BufferedReader(new FileReader("./src/rules.txt"))) {
             String line = br.readLine();
             while (line != null) {
                 System.out.println(line);
