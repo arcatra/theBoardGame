@@ -30,7 +30,7 @@ public class GameEntry {
         this.rows = rows;
         this.columns = columns;
 
-        this.board = new Board(rows, columns, this);
+        this.board = new Board(this.rows, this.columns, this);
 
     }
 
