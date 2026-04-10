@@ -11,10 +11,10 @@ The workspace contains two folders by default, where:
 
 if you're okay with the default compilation, You don't need to manually compile and run this project.
 > Note that the compiled .class files will be stored in `./bin/` DIR.
-> see `/src/crun.sh` bash file, it is responsible for comiplation and execution of this project.
+> see `crun.sh` bash file, it is responsible for comiplation and execution of this project.
 
 Make the crun.sh executable, `chmod +x crun.sh`
-Run the executable bash file `./crun.sh`
+Run the executable bash file `./crun.sh` => this will take care of compilation and execution.
 
 ## Config for VScode users
 
